@@ -12,6 +12,7 @@ import (
 var db *gorm.DB
 var err error
 
+//Person Struct
 type Person struct {
 	ID        uint   "json:\"id\""
 	FirstName string "json:\"firstname\""
@@ -29,23 +30,16 @@ func main() {
 	db.AutoMigrate(&Person{})
 
 	r := gin.Default()
-	r.GET("/", GetProjects)
 	r.GET("/people", GetPeople)
 	r.GET("/people/:id", GetPerson)
 	r.POST("/people", CreatePerson)
+	r.PUT("/people/:id", UpdatePerson)
+	r.DELETE("/people/:id", DeletePerson)
+
 	r.Run(":8080")
 }
 
-func GetProjects(c *gin.Context) {
-	var people []Person
-	if err := db.Find(&people).Error; err != nil {
-		c.AbortWithStatus(404)
-		fmt.Println(err)
-	} else {
-		c.JSON(200, people)
-	}
-}
-
+//GetPerson Method
 func GetPerson(c *gin.Context) {
 	id := c.Params.ByName("id")
 	var person Person
@@ -57,6 +51,7 @@ func GetPerson(c *gin.Context) {
 	}
 }
 
+//GetPeople Method
 func GetPeople(c *gin.Context) {
 	var people []Person
 	if err := db.Find(&people).Error; err != nil {
@@ -67,11 +62,33 @@ func GetPeople(c *gin.Context) {
 	}
 }
 
-//CreatePerson ashasa
+//CreatePerson Method
 func CreatePerson(c *gin.Context) {
 	var person Person
 	c.BindJSON(&person)
 
 	db.Create(&person)
 	c.JSON(200, person)
+}
+
+//UpdatePerson Method
+func UpdatePerson(c *gin.Context) {
+	id := c.Params.ByName("id")
+	var person Person
+	if err := db.Where("id = ?", id).First(&person).Error; err != nil {
+		c.AbortWithStatus(404)
+		fmt.Println(err)
+	}
+	c.BindJSON(&person)
+	db.Save(&person)
+	c.JSON(200, person)
+}
+
+//DeletePerson Method
+func DeletePerson(c *gin.Context) {
+	id := c.Params.ByName("id")
+	var person Person
+	d := db.Where("id = ?", id).Delete(&person)
+	fmt.Println(d)
+	c.JSON(200, gin.H{"id #" + id: "deleted"})
 }
